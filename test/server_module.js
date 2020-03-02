@@ -8,14 +8,16 @@ const base64_decode = (data) => Buffer.from(data, 'base64').toString('utf8');
 const DEBUG = false;
 const HOST = '127.0.0.1';
 const PORT = 3000;
-const USER  = "user";
-const PASS  = "1111";
 const REALM = "Realm text";
 const DIGEST_NONCE=md5((new Date()).getTime().toString());
 var options={
   answer:"Hello world!",
   digest:null,  //true|false|null
-  encode:null   //'br', 'deflate', 'gzip', null
+  encode:null,  //'br', 'deflate', 'gzip', null
+  USER: 'user',
+  PASS: '1111',
+  support_auth: ['digest', 'basic'],
+  support_encode: ['br', 'deflate', 'gzip']
 }
 
 //var answer_string="Hello world!";
@@ -35,7 +37,7 @@ const basicCheck=(auth_arr,authorization,method,uri)=>{
   if (auth_arr.length<2){ return false; }//incorect basic params
   let user_pass =base64_decode(auth_arr[1]); //"user:1111"
   let a = user_pass.split(':');// ['user', '1111']
-  return ((a.length<1) || (a[0] != USER) || (a[1] != PASS));
+  return ((a.length<1) || (a[0] != options.USER) || (a[1] != options.PASS));
 };
 
 const digestCheck=(auth_arr,authorization,method,uri)=>{
@@ -49,10 +51,10 @@ const digestCheck=(auth_arr,authorization,method,uri)=>{
     key_arr.push(key);
     map[key]=t[1].trim().replace(/^(["'])(.*)(["'])$/, '$2');
   }
-  if (!map['username'] || (USER != map['username'])) { return false; } // unknown user
+  if (!map['username'] || (options.USER != map['username'])) { return false; } // unknown user
   if (!map['nonce'] || !map['nc'] || !map['cnonce'] || !map['qop'] || !map['response'])  { return false; } // unknown nonce, nc, cnonce, qop
 
-  let A1 = md5([map['username'],':',PASS].join(':'));
+  let A1 = md5([map['username'],':',options.PASS].join(':'));
   let A2 = md5([method,uri].join(':'));
   let response=md5([A1, DIGEST_NONCE, map['nc'], map['cnonce'], map['qop'], A2].join(':'));
   return (response == map['response']);
@@ -145,8 +147,6 @@ const serverWorker=(req, res) => {
 module.exports.DEBUG= DEBUG;
 module.exports.HOST = HOST;
 module.exports.PORT = PORT;
-module.exports.USER = USER;
-module.exports.PASS = PASS;
 module.exports.REALM= REALM;
 module.exports.DIGEST_NONCE = DIGEST_NONCE;
 

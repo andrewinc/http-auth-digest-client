@@ -1,3 +1,11 @@
+/**
+ * start server
+ * node server [port [encode [auth]]]
+ * 
+ * - port: listening port default: 3000
+ * - encode: one of 'br', 'deflate', 'gzip' (without case sens.). Other (Ex.: 'none') - no encoding answer. Encoding use if client have it in header 'Accept-encoding'
+ * - auth: one of 'Basic', 'Digest' (without case sens.). Other (Ex.: 'none') - no HTTP-auth headers.
+ */
 const process = require('process');
 const http = require('http');
 const server_module=require('./server_module');
@@ -17,13 +25,20 @@ const fs = require('fs');
 
 fs.open(fname, 'w', (err,fd)=>{
   
-const hostname = '127.0.0.1';
-const port = 3000;
-
-  
-  
   fs.writeSync(fd, (new Date()).toString())
   fs.writeSync(fd,"\n");
+  let t;
+  let PORT = server_module.PORT;
+  if ((process.argv.length>2) && !isNaN(t=parseInt(process.argv[2],10))) { PORT = t; }
+  
+  //encoding: 'br', 'deflate', 'gzip', other (null)
+  const enc_array=server_module.options.support_encode;//['br', 'deflate', 'gzip']
+  if ( (process.argv.length>3) && ((t=enc_array.indexOf(process.argv[3].toLowerCase()))>=0) ) { server_module.options.encode = enc_array[t];  }
+  
+  //auth type 'Basic', 'Digest'
+  const auth_type=server_module.options.support_auth; // ['digest', 'basic']
+  if ( (process.argv.length>4) && ((t=auth_type.indexOf(process.argv[4].toLowerCase())>=0)) ) { server_module.options.digest = (0==t); }
+  
   
   const server = http.createServer((req, res) => {
     let answer = worker(req,res);
@@ -32,8 +47,8 @@ const port = 3000;
     console.log(answer);
   });
 
-  server.listen(server_module.PORT, server_module.HOST, () => {
-    //console.log(`Server running at http://${server_module.HOST}:${server_module.PORT}/`);
+  server.listen(PORT, server_module.HOST, () => {
+    //console.log(`Server running at http://${server_module.HOST}:${PORT}/`);
   });
   
   //fs.closeSync(fd);
